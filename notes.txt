@@ -1,0 +1,37 @@
+Initially Lamp Server Build.
+
+Lets build the playbook and separate to improve reusability once further Initially
+
+Scripts needed
+
+ServerBuild - host, firewall, mta, fqdn, network, backups, hostfiles, package updates, nagios
+Security - ufw, fail2ban, clamav, bijk?, rkhunter
+LAMP - see lamp script
+Add Vhost - add vhost, folder, itk user, permissions
+Update - update all servers - accept defailts
+
+Non-Ansible stuff (exim4-config)
+
+UFW - more info here: http://docs.ansible.com/ansible/latest/ufw_module.html
+
+-ufw:
+    state: enabled
+    policy: deny
+
+- ufw:
+    rule: allow
+    port: '{{ item }}'
+    proto: tcp
+    with items:
+        - 22
+        - 25
+        - 110
+        - 80
+        - 443
+        - 3306
+
+fail2ban config
+===============
+
+cat roles/fail2ban/files/jail.local
+

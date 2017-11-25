@@ -1,0 +1,44 @@
+<VirtualHost *:80>
+        DocumentRoot /var/www/pdst_dms/public
+        ServerName dms.pdst.ie
+        ServerAlias pdstdms.educast.ie dmsnew.pdst.ie
+
+        ServerAdmin aine@digilogue.net
+        Options Indexes MultiViews FollowSymLinks ExecCGI
+
+        # Other directives here
+        #ServerSignature Off AddType text/html .shtml
+
+        <Directory /var/www/pdst_dms/public>
+                Options FollowSymLinks
+                AllowOverride All
+                Order allow,deny
+                Allow from all
+        </Directory>
+
+        <IfModule mpm_itk_module>
+                AssignUserId dms defaultwebuser
+        </IfModule>
+
+        DirectoryIndex index.phtml index.php index.php3 index.shtml index.html index.htm
+</VirtualHost>
+
+<VirtualHost *:80>
+        DocumentRoot /var/www/pdst_dmstest/public
+        ServerName dms-test.pdst.ie
+        ServerAdmin aine@digilogue.net
+        Options Indexes MultiViews FollowSymLinks ExecCGI
+
+        <Directory /var/www/pdst_dmstest/public>
+                Options FollowSymLinks
+                AllowOverride All
+                Order allow,deny
+                Allow from all
+        </Directory>
+
+        <IfModule mpm_itk_module>
+                AssignUserId dmstest defaultwebuser
+        </IfModule>
+
+        DirectoryIndex index.phtml index.php index.php3 index.shtml index.html index.htm
+</VirtualHost>

@@ -1,0 +1,37 @@
+update hosts file
+update hostname
+add users for cms and dms and dmstest
+create folders for cms, dms and dmstest
+users
+    context
+    digilogue
+    sftpuser
+    sftpguy
+edit sshd_config
+create backups folder /home/backup/backups
+copy rsnapshot config (but disable!!!!)
+Build cron for backups
+touch /var/log/phpmail.log at 777
+copy alldbbackup.sh and set permissions +x
+add sftpguy and digilogur to sudoers
+
+do packages
+check each package for additional setup steps
+
+New details for shafiq
+New details for martin (context)
+
+Add crons
+0 22 * * * /root/ClamByDay.sh > /dev/null
+0 1 * * * /usr/bin/php /var/www/pdstcms.educast.ie/webnew/cron.php
+30 3    * * *           root    /usr/bin/rsnapshot daily
+0  3    * * 1           root    /usr/bin/rsnapshot weekly
+30 2    1 * *           root    /usr/bin/rsnapshot monthly
+
+Added databases, users and nagios xi stuff (snmp needs configuration)
+
+create folders
+get add users working
+chown folders
+
+

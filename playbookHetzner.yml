@@ -1,0 +1,175 @@
+---
+- hosts: all
+
+  vars_files:
+    - vars.yml
+
+  pre_tasks:
+    - name: Update apt cache if needed.
+      apt: update_cache=yes cache_valid_time=3600
+
+  handlers:
+    - name: restart apache
+      service: name=apache2 state=restarted
+
+  tasks:
+    - name: Get software for apt repository management.
+      apt: "name={{ item }} state=present"
+      with_items:
+        - python-apt
+        - python-pycurl
+
+      ## setup server defaults
+      ## host, firewall, mta, fqdn, network, backups, hostfiles, package updates
+
+      ## needed on blank Debian's sans LAMP stack ##
+      - name: "Install Apache, MySQL, PHP, and other dependencies."
+      apt: "name={{ item }} state=present"
+      with_items:
+        - apache2
+        - php7.0-common
+        - php7.0-cli
+        - php7.0-dev
+        - php7.0-gd
+        - php7.0-curl
+        - php7.0-json
+        - php7.0-opcache
+        - php7.0-xml
+        - php7.0-mbstring
+        - php7.0-pdo
+        - php7.0-mysql
+        - php-apcu
+        - libpcre3-dev
+        - libapache2-mod-php7.0
+        - python-mysqldb
+        - mysql-server
+
+      ## needed on all servers ##
+      - name: "Install extras"
+      apt: "name={{ item }} state=present"
+      with_items:
+        - git
+        - curl
+        - unzip
+        - ufw
+        - exim4
+        - ntp
+        - fail2ban
+        - clamav
+        - libapache2-mpm=itk
+        - rkhunter
+        - rsnapshot
+
+#    - name: Disable the firewall (since this is for local dev only).
+#      service: name=ufw state=stopped
+
+    - name: "Start Apache, MySQL, and PHP."
+      service: "name={{ item }} state=started enabled=yes"
+      with_items:
+        - apache2
+        - mysql
+
+    - name: Enable Apache rewrite module.
+      apache2_module: name=rewrite state=present
+      notify: restart apache
+
+    - name: Add Apache virtualhost.
+      template:
+        src: "templates/vhost1.conf.j2"
+        dest: "/etc/apache2/sites-available/{{ subdomain }}.{{ domain }}.{{ ext }}.conf"
+        owner: root
+        group: root
+        mode: 0644
+      notify: restart apache
+
+    - name: Symlink Drupal virtualhost to sites-enabled.
+      file:
+        src: "/etc/apache2/sites-available/{{ subdomain }}.{{ domain }}.{{ ext }}.conf"
+        dest: "/etc/apache2/sites-enabled/{{ subdomain }}.{{ domain }}.{{ ext }}.conf"
+        state: link
+      notify: restart apache
+
+    - name: Remove default virtualhost file.
+      file:
+        path: "/etc/apache2/sites-enabled/000-default"
+        state: absent
+      notify: restart apache
+
+#    - name: Adjust OpCache memory setting.
+#      lineinfile:
+#        dest: "/etc/php/7.1/apache2/conf.d/10-opcache.ini"
+#        regexp: "^opcache.memory_consumption"
+#        line: "opcache.memory_consumption = 96"
+#        state: present
+#      notify: restart apache
+
+#    - name: Remove the MySQL test database.
+#      mysql_db: db=test state=absent
+
+    - name: Create a MySQL database for Drupal.
+      mysql_db: "db={{ realname }} state=present"
+
+    - name: Create a MySQL user for Drupal.
+      mysql_user:
+        name: "{{ realname }}"
+        password: "1234"
+        priv: "{{ realname }}.*:ALL"
+        host: localhost
+        state: present
+
+    - name: Download Composer installer.
+      get_url:
+        url: https://getcomposer.org/installer
+        dest: /tmp/composer-installer.php
+        mode: 0755
+
+    - name: Set permissions properly on files directory.
+      file:
+        path: "{{ docroot_path }}/sites/default/files"
+        mode: 0700
+        state: directory
+        recurse: yes
+
+### hostname
+    - name: set hostname
+      - hostname:
+        name: "{{ hostname }}"
+
+    - name: set timezone 
+      timezone:
+        name: Europe/Dublin
+
+    ####### UFW
+    - name: Configure basic UFW behaviour
+    -ufw:
+        state: enabled
+        policy: deny
+
+    - ufw:
+        rule: allow
+        port: '{{ item }}'
+        proto: tcp
+        with items:
+            - 22
+            - 25
+            - 110
+            - 80
+            - 443
+            - 3306
+
+    ## fail2ban
+    #- name: copy fail2ban local config
+    #    file: src=jail.local dest=/etc/fail2ban/jail.local owner=root group=root mode=0644
+    #    sudo: yes
+
+    # better fail2ban config
+     - name: Add Apache virtualhost for Drupal 8.
+      template:
+        src: "templates/jail.local.j2"
+        dest: "/etc/fail2ban/jail.local"
+        owner: root
+        group: root
+        mode: 0644
+      notify: restart fail2ban
+
+    

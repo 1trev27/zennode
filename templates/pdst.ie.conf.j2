@@ -1,0 +1,45 @@
+<VirtualHost *:80>
+        DocumentRoot /var/www/pdst_cms/webnew/
+        ServerName pdst.ie
+        ServerAlias www.pdst.ie cms.pdst.ie cmsnew.pdst.ie
+
+        ServerAdmin aine@digilogue.net
+
+        # Other directives here
+        AddType text/html .shtml
+
+        ErrorLog "/var/www/pdst_cms/webnew/pdst-cms-error.log"
+        CustomLog "/var/www/pdst_cms/webnew/pdst-cms-access.log" combined
+
+        <IfModule mpm_itk_module>
+                AssignUserId cms defaultwebuser
+        </IfModule>
+
+        <Directory /var/www/pdst_cms/webnew>
+                Options Indexes MultiViews FollowSymLinks ExecCGI
+                AllowOverride All
+                Order allow,deny
+                Allow from all
+        </Directory>
+
+        DirectoryIndex index.phtml index.php index.php3 index.shtml index.html index.htm
+</VirtualHost>
+
+<VirtualHost *:80>
+        DocumentRoot /var/www/webinars
+        ServerName webinars.pdst.ie
+        ServerAlias antibullying.pdst.ie
+        ServerAdmin aine@digilogue.net
+
+        <Directory /var/www/webinars>
+                Options Indexes FollowSymLinks
+                AllowOverride All
+                Order allow,deny
+                Allow from all
+        </Directory>
+
+        <IfModule mpm_itk_module>
+                AssignUserId webinars defaultwebuser
+        </IfModule>
+
+</VirtualHost>

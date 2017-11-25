@@ -1,0 +1,27 @@
+---
+# The path where Drupal will be downloaded and installed.
+docroot_path: "/var/www/"
+
+# The resulting domain will be [domain].dev (with .dev appended).
+subdomain: "lamptest"
+domain: "digilogue1"
+ext: "com"
+realname: "lamptest"
+hostname: "node3.zennodeeu.com"
+
+user: "nodeeu"
+common_swap: yes
+common_swap_size: 50
+common_swap_fstab: yes
+swap_path: "/swap"
+common_swap_remove_current: yes
+
+# Zen Config
+addnode1: "zpool.blockoperations.com"
+addnode2: "zennodes.network"
+rpcuser: "znodedude722"
+rpcpassword: "tM4DCTUAd3wb4HZG8jkWEExkC9B63ZRDKFxhS54AvMVSPBaW"
+rpcport: "18231"
+testnet: "1"
+tlscertpath:  "/root/.acme.sh/node2.zennodeeu.com/fullchain.cer"
+tlskeypath: "/root/.acme.sh/node2.zennodeeu.com/node2.zennodeeu.com.key"
