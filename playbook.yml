@@ -1,6 +1,6 @@
 ---
 #### NOTE: Only tested on Ubuntu 1604. Should work with minimal changes on any Linux based system, especially debian derivations - package names may differ for RHEL based systems.
-- hosts: servers
+- hosts: localvagrant
   become: yes
   vars_files:
     - vars.yml
@@ -19,11 +19,11 @@
       # create users
     - name: Create group(s)
       group:
-        name: 'defaultwebuser'
+        name: '{{ group }}'
 
     - name: Create users context, sftpguy, sftpuser, cms, dms, dmstest
       user:
-        groups: 'defaultwebuser'
+        groups: '{{ group }}'
         append: True
         name: '{{ item }}'
       with_items:
@@ -31,24 +31,26 @@
 
     # sudo fallocate -l 4G /swapfile
     # Do SWAP
+    - name: check if swap file exists
+      stat:
+        path: "{{ swap_file }}"
+      register: swap_file_check
+      when: not swap_file_check.stat.exists
+
     - name: allocate space
-      command: sudo fallocate -l 4G {{ swap_path }}
-      # when: common_swap_check_recreate | bool
+      command: fallocate -l 4G {{ swap_path }}
       become: yes
 
     - name: chmod swap
       command: chmod 600 {{ swap_path }}
-      # when: common_swap_check_recreate | bool
       become: yes
 
     - name: made swap
       command: mkswap {{ swap_path }}
-      # when: common_swap_check_recreate | bool
       become: yes
 
     - name: turn swap on
       command: swapon {{ swap_path }}
-      # when: common_swap_check_recreate | bool
       become: yes
 
     - name: edit fstab to keep swap
@@ -56,7 +58,6 @@
           cat <<EOF >> /etc/fstab
           /swapfile none swap sw 0 0
           EOF
-      # when: common_swap_check_recreate | bool
       become: yes
 
     - name: change swappiness
@@ -64,10 +65,9 @@
         cat <<EOF >> /etc/sysctl.conf
         vm.swappiness=10
         EOF
-      # when: common_swap_check_recreate | bool
       become: yes
 
-   - name: "Install utils and dependencies"
+    - name: "Install utils and dependencies"
       apt: "name={{ item }} state=present"
       with_items:
         - pwgen
@@ -95,22 +95,25 @@
 
 
     # Install Zen
-    - name: turn swap on
-      command: 'deb https://zencashofficial.github.io/repo/ '$(lsb_release -cs)' main' | sudo tee --append /etc/apt/sources.list.d/zen.list
-      # when: common_swap_check_recreate | bool
+    # - name: turn swap on
+    #   command: 'deb https://zencashofficial.github.io/repo/ '$(lsb_release -cs)' main' | tee --append /etc/apt/sources.list.d/zen.list
+    #   become: yes
+
+    - apt_repository:
+        repo: deb-src https://zencashofficial.github.io/repo 
+        state: present
       become: yes
 
-    - name: turn swap on
+
+    - name: gpg --keyserver ha.pool.sks-keyservers.net
       command: gpg --keyserver ha.pool.sks-keyservers.net --recv 219F55740BBF7A1CE368BA45FB7053CE4991B669
-      # when: common_swap_check_recreate | bool
       become: yes
 
-    - name: turn swap on
+    - name: gpg --export
       command: gpg --export 219F55740BBF7A1CE368BA45FB7053CE4991B669 | sudo apt-key add -
-      # when: common_swap_check_recreate | bool
       become: yes
     
-    - name: Update apt cache if needed.
+    - name: Update apt cache if needed...
       apt: update_cache=yes cache_valid_time=3600
 
     - name: "Install zen packages"
@@ -120,8 +123,6 @@
 
     - name: zen-fetch-params
       command: zen-fetch-params
-      # when: common_swap_check_recreate | bool
-      become: yes
     
     # Update the Zen Configuration File
     - name: Update the Zen Configuration File
@@ -149,46 +150,46 @@
         hour: "22"
         job: "/root/ClamByDay.sh > /dev/null"
 
+    - name: ssl cron
       cron: 
-        name: "ssl certs Cron"
         user: "root"
         minute: "6"
         hour: "1"
-        job: "/home/{{ user }}/.acme.sh"/acme.sh --cron --home "/home/{{ user }}/.acme.sh" > /dev/null
+        job: "/home/{{ user }}/.acme.sh/acme.sh --cron --home /home/{{ user }}/.acme.sh > /dev/null"
         name: "Let's Encrypt Renewal"
 
-    - name: get certs
-      shell: |
-        sudo cp /home/{{ user }}/.acme.sh/{{ hostname }}/ca.cer /usr/share/ca-certificates/ca.crt
-        sudo dpkg-reconfigure ca-certificates
+    # - name: get certs
+    #   shell: |
+    #     sudo cp /home/{{ user }}/.acme.sh/{{ hostname }}/ca.cer /usr/share/ca-certificates/ca.crt
+    #     sudo dpkg-reconfigure ca-certificates
 
-    - name: update cert locations in zen.conf
-      shell: |
-        zen-cli stop
-        cat <<EOF >> ~/.zen/zen.conf
-        tlscertpath=/home/{{ user }}/.acme.sh/{{ hostname }}/{{ hostname }}.cer 
-        tlskeypath=/home/{{ user }}/.acme.sh/{{ hostname }}/{{ hostname }}.key
-        EOF
-        zend
+    # - name: update cert locations in zen.conf
+    #   shell: |
+    #     zen-cli stop
+    #     cat <<EOF >> ~/.zen/zen.conf
+    #     tlscertpath=/home/{{ user }}/.acme.sh/{{ hostname }}/{{ hostname }}.cer 
+    #     tlskeypath=/home/{{ user }}/.acme.sh/{{ hostname }}/{{ hostname }}.key
+    #     EOF
+    #   notify: restart zen
     
-    - name: update cert locations in zen.conf
-      shell: |
-        mkdir ~/zencash
-        cd ~/zencash
-        git clone https://github.com/ZencashOfficial/secnodetracker.git
-        cd secnodetracker
-        npm install
-        node setup.js
+    # - name: get tracker
+    #   shell: |
+    #     mkdir ~/zencash
+    #     cd ~/zencash
+    #     git clone https://github.com/ZencashOfficial/secnodetracker.git
+    #     cd secnodetracker
+    #     npm install
+    #     node setup.js
 
-    - name: install pm2
-      npm: 
-        name: pm2 
+    # - name: install pm2
+    #   npm: 
+    #     name: pm2 
 
-    - name: start tracker
-      command: pm2 start app.js --name securenodetracker
+    # - name: start tracker
+    #   command: pm2 start app.js --name securenodetracker
 
-    - name: add tracker to startup
-      command: pm2 startup
+    # - name: add tracker to startup
+    #   command: pm2 startup
  
 
     ####### UFW

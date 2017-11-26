@@ -10,6 +10,7 @@ realname: "lamptest"
 hostname: "node3.zennodeeu.com"
 
 user: "nodeeu"
+group: "nodeeu"
 common_swap: yes
 common_swap_size: 50
 common_swap_fstab: yes
